@@ -1,8 +1,9 @@
 
 setwd('/home/gaurav/Downloads')
 # Load all data
-Alldata <-read.csv('train_50k.csv')
-#Alldata <-read.csv('train.csv')
+#Alldata <-read.csv('train_50k.csv')
+
+Alldata <-read.csv('train.csv')
 
 
 #split data into training and test sets
@@ -76,6 +77,9 @@ Loc_Alldata$loc2[is.na(Loc_Alldata$loc2)]<-Loc_Alldata$loc3[is.na(Loc_Alldata$lo
 ## default the NA's to UK
 Loc_Alldata$loc2[is.na(Loc_Alldata$loc1)]<-'UK'
 
+
+
+
 ## getting rid of two categories ..some how I never find them in the test set when i go to predict
 Loc_Alldata<-Loc_Alldata[!grepl('Maintenance Jobs',Loc_Alldata$Category),]
 Loc_Alldata<-Loc_Alldata[!grepl('Domestic help & Cleaning Jobs',Loc_Alldata$Category),]
@@ -122,6 +126,20 @@ model3 <- cv.glmnet(model.matrix(~trainingset$Category), as.matrix(trainingset$S
 
 as.vector(predict(model, model.matrix(~test$ContractType), s="lambda.min"))
 
+##############################################################################################
+finAL_test<-read.csv('test.csv')
+finAL_test$Loc3 <-toupper(lapply(strsplit(as.character(finAL_test$LocationRaw),","),'[',2))
+finAL_test$Loc3<-gsub(' ','',finAL_test$Loc3)
+Loc_finAL_test<- merge(location,finAL_test,by, by.x="loc3", by.y="Loc3",all.y=TRUE )
+Loc_finAL_test$loc2[is.na(Loc_finAL_test$loc2)]<-Loc_finAL_test$loc3[is.na(Loc_finAL_test$loc2)]
+## default the NA's to UK
+Loc_finAL_test$loc2[is.na(Loc_finAL_test$loc1)]<-'UK'
+model2<-lm(SalaryNormalized ~ Category +ContractType+ContractTime + loc2, data=Loc_Alldata)
+
+Loc_finAL_test$Category[grepl('Part time Jobs',Loc_finAL_test$Category)]<-'Healthcare & Nursing Jobs'
+test.predict_Final <- predict(model2, Loc_finAL_test)
+result<-data.frame(Loc_finAL_test$Id , Loc_finAL_test$Salary)
+write.csv(result ,"result.csv" ,row.names=FALSE)
 
 
 
